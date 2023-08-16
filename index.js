@@ -192,6 +192,18 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("updateUserOptions", async (gameData) => {
+    const room = rooms[gameData.roomId];
+    if (room) {
+      const currentPlayer = room.players.find(
+        (player) => player.username === gameData.username
+      );
+      if (currentPlayer) {
+        currentPlayer.powerUps[gameData.key] = false;
+      }
+    }
+  });
+
   socket.on("startGame", async (startGameData) => {
     const room = rooms[startGameData.roomId];
     if (room && !room.questionManager) {
@@ -248,7 +260,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("submitAnswer", (roomId, username, answer, optionIndex, factor) => {
+  socket.on("submitAnswer", (roomId, username, answer, optionIndex, factor, isDoubleScore) => {
     const room = rooms[roomId];
     let player = room.players.find((player) => player.username === username);
     if (room && room.questionManager) {
@@ -257,6 +269,9 @@ io.on("connection", (socket) => {
       let isCorrect = false;
       if (player && room.questionManager.isCorrectAnswer(answer)) {
         player.score += 100 * (factor / 30);
+        if(isDoubleScore) {
+          player.score *= 2;
+        }
         player.score = Math.floor(player.score);
         isCorrect = true;
       }
@@ -300,6 +315,24 @@ io.on("connection", (socket) => {
     const room = rooms[roomId];
     const totalUsers = room.players.length;
     socket.emit("updateTotalUsers", totalUsers);
+  });
+
+  socket.on("getUserOptions", (gameData) => {
+    const room = rooms[gameData.roomId];
+    if (room) {
+      const player = room.players.find(
+        (player) => player.username === gameData.username
+      );
+      if (player) {
+        socket.emit("updateUserOptions", player.powerUps);
+      } else {
+        socket.emit("updateUserOptions", {
+          halve: false,
+          doubleScore: false,
+          chatGPT: false,
+        });
+      }
+    }
   });
 
   socket.on("nextQuestion", (roomId) => {
