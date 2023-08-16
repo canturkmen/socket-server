@@ -22,7 +22,7 @@ app.use(
 );
 
 const rooms = {};
-const TIME_LIMIT = 30;
+let TIME_LIMIT = 30;
 const COUNTDOWN_LIMIT = 5;
 
 function startCountdownTimer(roomId) {
@@ -211,6 +211,7 @@ io.on("connection", (socket) => {
         room.players[playerIndex].powerUps = startGameData.selectedOptions;
       }
 
+      TIME_LIMIT = startGameData.timer;
       clearInterval(room.countdownTimerInterval);
       room.questionManager = new QuestionManager(startGameData.data.content);
     }
