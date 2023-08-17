@@ -12,6 +12,7 @@ class Room {
     this.answerCount = 0;
     this.answerCounts = [0, 0, 0, 0];
     this.admin = null;
+    this.totalQuestions = null;
   }
 
   createAdmin(admin) {
