@@ -22,46 +22,6 @@ app.use(
 );
 
 const rooms = {};
-let TIME_LIMIT = 30;
-const COUNTDOWN_LIMIT = 5;
-
-function startCountdownTimer(roomId) {
-  const room = rooms[roomId];
-  if (room) {
-    if (room.countdownTimerInterval) {
-      clearInterval(room.countdownTimerInterval);
-    }
-    room.countdownTimer = COUNTDOWN_LIMIT;
-    io.to(roomId).emit("countdownTimer", room.countdownTimer);
-    room.countdownTimerInterval = setInterval(() => {
-      room.countdownTimer--;
-      io.to(roomId).emit("countdownTimer", room.countdownTimer);
-      if (room.countdownTimer <= 0) {
-        clearInterval(room.countdownTimerInterval);
-        io.to(roomId).emit("countdownFinished");
-      }
-    }, 1000);
-  }
-}
-
-function startTimer(roomId) {
-  const room = rooms[roomId];
-  if (room) {
-    if (room.timerInterval) {
-      clearInterval(room.timer);
-    }
-    room.timer = TIME_LIMIT;
-    io.to(roomId).emit("timer", room.timer);
-    room.timerInterval = setInterval(() => {
-      room.timer--;
-      io.to(roomId).emit("timer", room.timer);
-      if (room.timer <= 0 || room.isAllAnswered()) {
-        clearInterval(room.timerInterval);
-        io.to(roomId).emit("timeout");
-      }
-    }, 1000);
-  }
-}
 
 function collectGameData(roomId) {
   const room = rooms[roomId];
@@ -213,19 +173,23 @@ io.on("connection", (socket) => {
       }
 
       clearInterval(room.countdownTimerInterval);
-
-      TIME_LIMIT = startGameData.timer;
+      room.timer = startGameData.timer;
+      room.TIME_LIMIT = startGameData.timer;
       room.questionManager = new QuestionManager(startGameData.data.content);
       room.totalQuestions = startGameData.data.content.length;
     }
   });
 
   socket.on("startCountdownTimer", (roomId) => {
-    startCountdownTimer(roomId);
+    if (rooms[roomId]) {
+      rooms[roomId].startCountdownTimer(io);
+    }
   });
 
   socket.on("startTimer", (roomId) => {
-    startTimer(roomId);
+    if (rooms[roomId]) {
+      rooms[roomId].startTimer(io);
+    }
   });
 
   socket.on("getTotalQuestions", (roomId) => {
@@ -316,6 +280,7 @@ io.on("connection", (socket) => {
           );
 
         if (room.isAllAnswered()) {
+          room.timer = room.TIME_LIMIT;
           clearInterval(room.timerInterval);
           socket.to(roomId).emit("showResults");
           socket.emit("showResults");
@@ -356,28 +321,30 @@ io.on("connection", (socket) => {
 
   socket.on("nextQuestion", (roomId) => {
     const room = rooms[roomId];
-    room.answers = {};
-    room.answerCounts = [0, 0, 0, 0];
-    room.answerCount = 0;
-    room.questionManager.nextQuestion();
-    if (room && !room.questionManager.hasMoreQuestions()) {
-      setTimeout(() => {
-        socket.emit("isLastQuestion");
-        socket.to(roomId).emit("isLastQuestion");
-      }, 7000);
-    } else {
-      setTimeout(() => {
-        socket
-          .to(roomId)
-          .emit(
+    if (room) {
+      room.answers = {};
+      room.answerCounts = [0, 0, 0, 0];
+      room.answerCount = 0;
+      room.questionManager.nextQuestion();
+      if (room && !room.questionManager.hasMoreQuestions()) {
+        setTimeout(() => {
+          socket.emit("isLastQuestion");
+          socket.to(roomId).emit("isLastQuestion");
+        }, 7000);
+      } else {
+        setTimeout(() => {
+          socket
+            .to(roomId)
+            .emit(
+              "updateNextQuestion",
+              room.questionManager.getCurrentQuestion()
+            );
+          socket.emit(
             "updateNextQuestion",
             room.questionManager.getCurrentQuestion()
           );
-        socket.emit(
-          "updateNextQuestion",
-          room.questionManager.getCurrentQuestion()
-        );
-      }, 7000);
+        }, 7000);
+      }
     }
   });
 
