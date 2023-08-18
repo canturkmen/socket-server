@@ -136,15 +136,15 @@ io.on("connection", (socket) => {
     const room = rooms[data.roomId];
     if (room) {
       if (data.username == room.getAdmin().username) {
-        room.removeAdmin();
-        delete rooms[data.roomId];
         socket.to(data.roomId).emit("adminLeft");
+        room.reset();
+        delete rooms[data.roomId];
       } else {
-        room.removePlayer(data.username);
         socket.to(data.roomId).emit("updateWaitingRoom", room.getPlayers());
         socket
           .to(data.roomId)
           .emit("updateConnectionCount", room.getPlayers().length);
+        room.removePlayer(data.username);
       }
       socket.leave(data.roomId);
     } else {
@@ -289,10 +289,20 @@ io.on("connection", (socket) => {
     }
   );
 
-  socket.on("showLeaderboard", () => {
-    setTimeout(() => {
-      socket.emit("navigateLeaderboard");
-    }, 7000);
+  socket.on("showLeaderboard", (roomId) => {
+    const room = rooms[roomId];
+    if (room) {
+      const nextIndex = room.questionManager.getCurrentQuestionIndex() + 1;
+      if (nextIndex < room.questionManager.questions.length) {
+        setTimeout(() => {
+          socket.emit("navigateLaderboard");
+        }, 7000);
+      } else {
+        setTimeout(() => {
+          socket.emit("navigateWinnerPage");
+        }, 7000);
+      }
+    }
   });
 
   socket.on("getTotalUsers", (roomId) => {

@@ -4,6 +4,7 @@ const TIME_LIMIT_CONSTANT = 30;
 class Room {
   constructor(roomId) {
     this.roomId = roomId;
+    this.admin = null;
     this.players = [];
     this.questionManager = null;
     this.answers = {};
@@ -80,6 +81,22 @@ class Room {
     this.players = this.players.filter(
       (player) => player.username !== username
     );
+  }
+
+  reset() {
+    this.roomId = null;
+    this.admin = null;
+    this.players = [];
+    this.questionManager = null;
+    this.answers = {};
+    this.totalAnswers = {};
+    this.countdownTimer = COUNTDOWN_LIMIT;
+    this.countdownTimerInterval = null;
+    this.TIME_LIMIT = TIME_LIMIT_CONSTANT;
+    this.timer = TIME_LIMIT_CONSTANT;
+    this.timerInterval = null;
+    this.answerCount = 0;
+    this.answerCounts = [0, 0, 0, 0]; // Assuming 4 answer 
   }
 
   removeAdmin() {
