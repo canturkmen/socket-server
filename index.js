@@ -58,6 +58,8 @@ function collectGameData(roomId) {
     }
   });
 
+  console.log(gameData);
+
   return gameData;
 }
 
@@ -292,16 +294,9 @@ io.on("connection", (socket) => {
   socket.on("showLeaderboard", (roomId) => {
     const room = rooms[roomId];
     if (room) {
-      const nextIndex = room.questionManager.getCurrentQuestionIndex() + 1;
-      if (nextIndex < room.questionManager.questions.length) {
-        setTimeout(() => {
-          socket.emit("navigateLaderboard");
-        }, 7000);
-      } else {
-        setTimeout(() => {
-          socket.emit("navigateWinnerPage");
-        }, 7000);
-      }
+      setTimeout(() => {
+        socket.emit("navigateLaderboard");
+      }, 2500);
     }
   });
 
@@ -340,7 +335,7 @@ io.on("connection", (socket) => {
         setTimeout(() => {
           socket.emit("isLastQuestion");
           socket.to(roomId).emit("isLastQuestion");
-        }, 7000);
+        }, 4500);
       } else {
         setTimeout(() => {
           socket
@@ -353,7 +348,7 @@ io.on("connection", (socket) => {
             "updateNextQuestion",
             room.questionManager.getCurrentQuestion()
           );
-        }, 7000);
+        }, 4500);
       }
     }
   });
